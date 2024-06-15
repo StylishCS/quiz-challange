@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Quiz Challenge</title>
+    <style>
+      .btn {
+        --border-color: linear-gradient(-45deg, #ffae00, #7e03aa, #00fffb);
+        --border-width: 0.125em;
+        --curve-size: 0.5em;
+        --blur: 30px;
+        --bg: #080312;
+        --color: #afffff;
+        color: var(--color);
+        cursor: pointer;
+
+        position: relative;
+        isolation: isolate;
+        display: inline-grid;
+        place-content: center;
+        padding: 0.5em 1.5em;
+        font-size: 17px;
+        border: 0;
+        text-transform: uppercase;
+        box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.6);
+        clip-path: polygon(
+          /* Top-left */ 0% var(--curve-size),
+          var(--curve-size) 0,
+          /* top-right */ 100% 0,
+          100% calc(100% - var(--curve-size)),
+          /* bottom-right 1 */ calc(100% - var(--curve-size)) 100%,
+          /* bottom-right 2 */ 0 100%
+        );
+        transition: color 250ms;
+      }
+
+      .btn::after,
+      .btn::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+      }
+
+      .btn::before {
+        background: var(--border-color);
+        background-size: 300% 300%;
+        animation: move-bg7234 5s ease infinite;
+        z-index: -2;
+      }
+
+      @keyframes move-bg7234 {
+        0% {
+          background-position: 31% 0%;
+        }
+
+        50% {
+          background-position: 70% 100%;
+        }
+
+        100% {
+          background-position: 31% 0%;
+        }
+      }
+
+      .btn::after {
+        background: var(--bg);
+        z-index: -1;
+        clip-path: polygon(
+          /* Top-left */ var(--border-width)
+            calc(var(--curve-size) + var(--border-width) * 0.5),
+          calc(var(--curve-size) + var(--border-width) * 0.5)
+            var(--border-width),
+          /* top-right */ calc(100% - var(--border-width)) var(--border-width),
+          calc(100% - var(--border-width))
+            calc(100% - calc(var(--curve-size) + var(--border-width) * 0.5)),
+          /* bottom-right 1 */
+            calc(100% - calc(var(--curve-size) + var(--border-width) * 0.5))
+            calc(100% - var(--border-width)),
+          /* bottom-right 2 */ var(--border-width)
+            calc(100% - var(--border-width))
+        );
+        transition: clip-path 500ms;
+      }
+
+      .btn:where(:hover, :focus)::after {
+        clip-path: polygon(
+          /* Top-left */ calc(100% - var(--border-width))
+            calc(100% - calc(var(--curve-size) + var(--border-width) * 0.5)),
+          calc(100% - var(--border-width)) var(--border-width),
+          /* top-right */ calc(100% - var(--border-width)) var(--border-width),
+          calc(100% - var(--border-width))
+            calc(100% - calc(var(--curve-size) + var(--border-width) * 0.5)),
+          calc(100% - calc(var(--curve-size) + var(--border-width) * 0.5))
+            calc(100% - var(--border-width)),
+          /* bottom-right 2 */
+            calc(100% - calc(var(--curve-size) + var(--border-width) * 0.5))
+            calc(100% - var(--border-width))
+        );
+        transition: 200ms;
+      }
+
+      .btn:where(:hover, :focus) {
+          color: #fff;
+      }
+      body {
+        background-image: url("./background.jpg");
+        background-size: cover;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        color: white;
+        font-family: Arial, sans-serif;
+      }
+      #container {
+        text-align: center;
+      }
+      #quizmasterControls,
+      #playerControls {
+        margin-top: 20px;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+      }
+      h1 {
+        margin-bottom: 20px;
+      }
+      #firstResponder {
+        margin-top: 20px;
+        font-size: 20px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <img src="logo.png" alt="logo" style="width: 300px" />
+      <h1>Quiz Challenge</h1>
+      <div id="playerControls">
+        <button class="btn" onclick="raiseHand()">Raise Hand</button>
+      </div>
+      <div id="quizmasterControls">
+        <button class="btn" onclick="correctAnswer()">Correct Answer</button>
+        <button class="btn" onclick="reset()">Reset</button>
+      </div>
+      <div id="firstResponder"></div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      let myName = "";
+      let role = "";
+
+      socket.on("firstResponder", (name) => {
+        document.getElementById(
+          "firstResponder"
+        ).innerText = `First Responder: ${name}`;
+      });
+
+      socket.on("reset", () => {
+        document.getElementById("firstResponder").innerText = "";
+      });
+
+      socket.on("assignRole", (assignedRole) => {
+        role = assignedRole;
+        console.log("Role assigned:", role);
+        if (role === "player") {
+          document.getElementById("playerControls").style.display = "block";
+          document.getElementById("quizmasterControls").style.display = "none";
+        } else if (role === "quizmaster") {
+          document.getElementById("playerControls").style.display = "none";
+          document.getElementById("quizmasterControls").style.display = "block";
+        }
+      });
+
+      function raiseHand() {
+        if (!myName) {
+          myName = prompt("Enter your name:");
+        }
+        socket.emit("raiseHand", { name: myName });
+      }
+
+      function correctAnswer() {
+        socket.emit("correctAnswer");
+      }
+
+      function reset() {
+        socket.emit("reset");
+      }
+
+      // Ask for role assignment on load
+      window.onload = function () {
+        role = prompt("Enter your role (player/quizmaster):");
+        if (role === "quizmaster") {
+          socket.emit("registerQuizmaster");
+        } else {
+          myName = prompt("Enter your name:");
+          socket.emit("assignRole", "player");
+        }
+      };
+    </script>
+  </body>
+</html>
