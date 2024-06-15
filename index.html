@@ -191,7 +191,7 @@
 
       // Ask for role assignment on load
       window.onload = function () {
-        role = prompt("Enter your role (player/quizmaster):");
+        role = prompt("Enter your role \"Player\":");
         if (role === "quizmaster") {
           socket.emit("registerQuizmaster");
         } else {
